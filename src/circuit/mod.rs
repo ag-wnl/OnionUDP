@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use bytes::Bytes;
+use rand::Rng;
 
 use crate::crypto::CipherSuit;
 use crate::errors::ErrorType;
@@ -20,7 +21,9 @@ pub struct Circuit<CS: CipherSuit> {
 impl<CS: CipherSuit> Circuit<CS> {
     pub async fn send(&self, data: &[u8]) -> Result<(), ErrorType> {
         let mut packet = OnionPacket::new(Bytes::copy_from_slice(data));
-        let nonce = [0u8; 12]; // todo: generate unique nonces
+        
+        let mut nonce = [0u8; 12]; 
+        rand::rng().fill(&mut nonce);
         
         for (i, hop) in self.path.iter().enumerate().rev() {
             let aead = CS::new_aead(self.keys[i].as_ref());
@@ -33,7 +36,9 @@ impl<CS: CipherSuit> Circuit<CS> {
     pub async fn recv(&self, buf: &mut [u8]) -> Result<usize, ErrorType> {
         let (len, _) = self.endpoint.recv_from(buf).await?;
         let mut packet = OnionPacket::new(Bytes::copy_from_slice(&buf[..len]));
-        let nonce = [0u8; 12]; // todo: sync nonces
+        
+        let mut nonce = [0u8; 12];
+        rand::rng().fill(&mut nonce);
 
         for key in &self.keys {
             let aead = CS::new_aead(key.as_ref());
