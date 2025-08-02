@@ -40,7 +40,7 @@ pub async fn perform_handshake<CS: CipherSuit>(
 
     endpoint.send_to(&serialize_msg(&hello), path[0]).await?;
 
-    // ack msg:
+    // wait for ack msg from first hop:
     let msg = recv_with_timeout(endpoint).await?;
     let relay_pubkey = match msg {
         HandshakeMsg::RelayAck { circuit_id: id, relay_pubkey } if id == circuit_id => relay_pubkey,
@@ -48,9 +48,8 @@ pub async fn perform_handshake<CS: CipherSuit>(
     };
 
     let _relay_pubkey = CS::pubkey_from_bytes(&relay_pubkey);
-
-    let shared = CS::key_exchange(&_relay_pubkey.unwrap(), my_privkey); // shared secret
-    keys.push(shared);
+    let shared_secret = CS::key_exchange(&_relay_pubkey.unwrap(), my_privkey); 
+    keys.push(shared_secret);
 
     // extend circuit:
     for i in 1..path.len() {
@@ -62,7 +61,7 @@ pub async fn perform_handshake<CS: CipherSuit>(
             next_hop,
         };
 
-        endpoint.send_to(&serialize_msg(&extend), next_hop).await?;
+        endpoint.send_to(&serialize_msg(&extend), path[0]).await?;
         let msg = recv_with_timeout(endpoint).await?;
         let received_relay_pubkey = match msg {
             HandshakeMsg::RelayAck { circuit_id: id, relay_pubkey } if id == circuit_id => relay_pubkey,
