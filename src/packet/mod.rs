@@ -53,6 +53,5 @@ impl OnionPacket {
         
         self.payload = Bytes::copy_from_slice(payload);
         Ok(next_addr)
-
     }
 }

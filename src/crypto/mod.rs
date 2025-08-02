@@ -1,7 +1,6 @@
 use bytes::Bytes;   
 pub mod chacha_x25519;
 
-
 pub trait CipherSuit {
     type PubKey: AsRef<[u8]> + Clone;
     type PrivateKey;
@@ -13,6 +12,12 @@ pub trait CipherSuit {
     fn new_aead(key: &[u8])-> Self::Aead;
     fn encrypt(aead: Self::Aead, nonce: &[u8], plaintext: &[u8])-> Bytes;
     fn decrypt(aead: Self::Aead, nonce: &[u8], ciphertext: &[u8])-> Option<Bytes>;
+
+    // misc
+    fn pubkey_from_bytes(bytes: &[u8]) -> Result<Self::PubKey, &'static str>;
+    fn shared_secret_from_bytes(bytes: &[u8]) -> Result<Self::SharedSecret, &'static str>;
+
+    fn new() -> Self;
 }
 
 
