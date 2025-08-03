@@ -3,7 +3,7 @@ use bytes::Bytes;
 use bincode;
 use serde::{Serialize, Deserialize};
 use tokio::time::{self, Duration};
-use crate::{crypto::CipherSuit, errors::ErrorType, transport::UdpEndpoint};
+use crate::{crypto::CipherSuit, errors::ErrorType, transport::UdpEndpoint, logging::Logger};
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,6 +31,7 @@ pub async fn perform_handshake<CS: CipherSuit>(
 )-> Result<Vec<CS::SharedSecret>, ErrorType> {
     let mut keys = Vec::with_capacity(path.len());
     let circuit_id = rand::random::<u32>();
+    Logger::network(&format!("Circuit ID created: {:?}", &circuit_id));
     
     let (my_pubkey, my_privkey) = CS::generate_keypair();
     let hello = HandshakeMsg::Hello { 
@@ -38,6 +39,7 @@ pub async fn perform_handshake<CS: CipherSuit>(
         pubkey: my_pubkey.as_ref().to_vec() 
     };
 
+    Logger::network(&format!("Sending hello message to first hop: {:?}", &path[0]));
     endpoint.send_to(&serialize_msg(&hello), path[0]).await?;
 
     // wait for ack msg from first hop:
@@ -88,11 +90,11 @@ async fn recv_with_timeout(endpoint: &UdpEndpoint) -> Result<HandshakeMsg, Error
 }
 
 
-fn serialize_msg(msg: &HandshakeMsg) -> Bytes {
+pub fn serialize_msg(msg: &HandshakeMsg) -> Bytes {
     Bytes::from(bincode::serde::encode_to_vec(msg, bincode::config::standard()).unwrap())
 }
 
-fn deserialize_msg(buf: &[u8]) -> Result<HandshakeMsg, ErrorType> {
+pub fn deserialize_msg(buf: &[u8]) -> Result<HandshakeMsg, ErrorType> {
     bincode::serde::decode_from_slice(buf, bincode::config::standard())
         .map(|(msg, _)| msg)
         .map_err(|_| ErrorType::Protocol("deserialize failed".into()))

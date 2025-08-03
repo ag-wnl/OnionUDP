@@ -5,3 +5,4 @@ pub mod packet;
 pub mod handshake;
 pub mod circuit;
 pub mod relay;
+pub mod logging;

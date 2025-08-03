@@ -34,6 +34,8 @@ impl OnionPacket {
         self.payload = encrypted;
 
         let next_addr_str = next_address.to_string();
+        dbg!("add layer | next addr: {:?}", &next_addr_str);
+
         self.header = Bytes::copy_from_slice(next_addr_str.as_bytes());
         Ok(())
     }
@@ -50,6 +52,8 @@ impl OnionPacket {
 
         let addr_str = std::str::from_utf8(&address_bytes).map_err(|_| ErrorType::Protocol("Invalid addr".into()))?;
         let next_addr: SocketAddr = addr_str.parse().map_err(|_| ErrorType::Protocol("Parse error".into()))?;
+
+        dbg!("remove layer | next addr: {:?}", &next_addr);
         
         self.payload = Bytes::copy_from_slice(payload);
         Ok(next_addr)

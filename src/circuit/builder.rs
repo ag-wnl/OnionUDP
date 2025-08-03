@@ -5,6 +5,7 @@ use crate::crypto::CipherSuit;
 use crate::errors::ErrorType;
 use crate::handshake::perform_handshake;
 use crate::transport::UdpEndpoint;
+use crate::logging::Logger;
 
 pub struct CircuitBuilder<CS: CipherSuit> {
     path: Vec<SocketAddr>,
@@ -38,6 +39,7 @@ impl<CS: CipherSuit> CircuitBuilder<CS> {
         }
 
         let endpoint = UdpEndpoint::bind("0.0.0.0:0".parse().unwrap()).await?;
+        Logger::circuit(&format!("About to perform handshake | Path: {:?}", &self.path));
         let keys = perform_handshake::<CS>(&endpoint, &self.path).await?;
         
         Ok(Circuit {

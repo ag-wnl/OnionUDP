@@ -26,7 +26,7 @@ impl<CS: CipherSuit> Circuit<CS> {
         rand::rng().fill(&mut nonce);
         
         for (i, hop) in self.path.iter().enumerate().rev() {
-            let aead = CS::new_aead(self.keys[i].as_ref());
+            let aead: <CS as CipherSuit>::Aead = CS::new_aead(self.keys[i].as_ref());
             packet.add_layer::<CS>(*hop, aead, &nonce)?;
         }
         self.endpoint.send_to(&packet.payload, self.path[0]).await?;
